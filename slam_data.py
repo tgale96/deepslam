@@ -5,15 +5,23 @@ from torch.utils.data import Dataset
 
 
 class SlamDataset(Dataset):
-    def __init__(self, fname, dset_name):
+    def __init__(self, fname, dset_name, flatten = True):
         self.f = h5.File(fname, 'r')
 
-        # Flatten the image dims, for testing with fc network
+
         tmp = np.array(self.f[dset_name + "/rgb"], dtype=np.float32)
-        tmp = tmp.reshape((tmp.shape[0], -1))
+        if flatten:
+            tmp = tmp.reshape((tmp.shape[0], -1))
+        else:
+            tmp = np.transpose(tmp, [0, 3, 1, 2])
         self.rgb = torch.from_numpy(tmp)
 
-        self.depth = torch.from_numpy(np.array(self.f[dset_name + "/depth"], dtype=np.float32))
+        tmp = np.array(self.f[dset_name + "/depth"], dtype=np.float32)
+        if flatten:
+            tmp = tmp.reshape((tmp.shape[0], -1))
+        else:
+            tmp = np.reshape(tmp, (tmp.shape[0], 1, tmp.shape[1], tmp.shape[2]))
+        self.depth = torch.from_numpy(tmp)
 
         # h5py doesn't seem to like it when we add a 'dtype=np.float32' to the
         # np.array call. Doing the conversion in two steps produces the result
