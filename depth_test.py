@@ -42,10 +42,11 @@ class DepthNet(nn.Module):
         x = self.decoder(x)
         return x
 
-# Input dims
+# Output dims
+h, w, c = 480, 640, 3
 batch_size = 32
 epochs = 100
-lr = 0.00000001
+lr = 0.00000000001
 
 # Create the data loaders
 train_loader = DataLoader(SlamDataset("data/slam_data.h5", "rgbd_dataset_freiburg1_xyz", False),
@@ -76,7 +77,8 @@ def train(epoch):
         
         # Calculate and print loss
         loss = criterion(dec, target)
-
+        loss /= h*w*c
+        
         # Backprop and update
         optimizer.zero_grad()
         loss.backward()
@@ -111,7 +113,9 @@ def test(epoch):
             out.write("")
                 
         # Calculate and print loss
-        avg_loss += criterion(dec, target).data[0]
+        loss = criterion(dec, target).data[0]
+        loss /= h*w*c
+        avg_loss += loss
     
     avg_loss /= len(test_loader)
     print("Test Set:\tAvg. Loss : {:.6f}".format(avg_loss))
