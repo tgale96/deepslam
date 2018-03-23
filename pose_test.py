@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser(
     description="script to train a small pose predictor")
 
 parser.add_argument("--write_results", action="store_true")
+parser.add_argument("--cuda", action="store_true")
 parser.add_argument('--hidden_size', help="num units in hidden layer",
                     type=int, default=100)                    
 args = parser.parse_args()
@@ -47,7 +48,9 @@ test_loader = DataLoader(SlamDataset("data/slam_data.h5", "rgbd_dataset_freiburg
 
 # Create the model
 model = PoseNet(in_dims, hidden_dims, out_dims)
-
+if args.cuda:
+    model = model.cuda()
+    
 criterion_xyz = torch.nn.MSELoss(size_average=True)
 criterion_wpqr = torch.nn.MSELoss(size_average=True)
 optimizer = torch.optim.SGD(model.parameters(), lr=lr)
@@ -58,6 +61,10 @@ def train(epoch):
         # Get the data for this iter
         data = Variable(batch['rgb'])
         target = Variable(batch['pose'])
+        if args.cuda:
+            data = data.cuda()
+            target = target.cuda()
+            
         target_xyz = target[:, 0:3]
         target_wpqr = target[:, 3:]
         
@@ -95,6 +102,10 @@ def test(epoch):
         # Get the data for this iter
         data = Variable(batch['rgb'])
         target = Variable(batch['pose'])
+        if args.cuda:
+            data = data.cuda()
+            target = target.cuda()
+            
         target_xyz = target[:, 0:3]
         target_wpqr = target[:, 3:]
 
