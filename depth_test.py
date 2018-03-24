@@ -108,7 +108,7 @@ def test(epoch):
 
         # Write results to file
         if args.write_results:
-            depth_map = np.reshape(dec.cpu().data.numpy(), (h, w))
+            depth_map = np.reshape(dec.cpu().data.numpy(), (h, w)) * 5000.
             cv2.imwrite("e{}_{}.png".format(epoch, batch_idx), depth_map)
         
         # Calculate and print loss
