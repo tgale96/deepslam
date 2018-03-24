@@ -21,6 +21,7 @@ class SlamDataset(Dataset):
             tmp = tmp.reshape((tmp.shape[0], -1))
         else:
             tmp = np.reshape(tmp, (tmp.shape[0], 1, tmp.shape[1], tmp.shape[2]))
+        tmp = tmp / 5000.
         self.depth = torch.from_numpy(tmp)
 
         # h5py doesn't seem to like it when we add a 'dtype=np.float32' to the

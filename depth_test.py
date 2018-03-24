@@ -19,22 +19,22 @@ class DepthNet(nn.Module):
         super(DepthNet, self).__init__()
 
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 16, 4, 2), # b, 16, 239, 319
+            nn.Conv2d(3, 128, 4, 2), # b, 128, 239, 319
             nn.ReLU(True),
             nn.MaxPool2d(3, 2), # b, 16, 119, 159
-            nn.Conv2d(16, 8, 3, 2), # b, 8, 59, 79
+            nn.Conv2d(128, 64, 3, 2), # b, 64, 59, 79
             nn.ReLU(True),
-            nn.MaxPool2d(3, 2) # b, 8, 29, 39
+            nn.MaxPool2d(3, 2) # 64, 8, 29, 39
         )
 
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(8, 8, 3, 2), # b, 8, 59, 79
+            nn.ConvTranspose2d(64, 64, 3, 2), # b, 64, 59, 79
             nn.ReLU(True),
-            nn.ConvTranspose2d(8, 16, 3, 2), # b, 16, 119, 159
+            nn.ConvTranspose2d(64, 128, 3, 2), # b, 128, 119, 159
             nn.ReLU(True),
-            nn.ConvTranspose2d(16, 16, 3, 2), # b, 16, 239, 319
+            nn.ConvTranspose2d(128, 128, 3, 2), # b, 128, 239, 319
             nn.ReLU(True),
-            nn.ConvTranspose2d(16, 1, 4, 2) # b, 1, 480, 640
+            nn.ConvTranspose2d(128, 1, 4, 2) # b, 1, 480, 640
         )
         
     def forward(self, x):
@@ -46,7 +46,7 @@ class DepthNet(nn.Module):
 h, w, c = 480, 640, 3
 batch_size = 32
 epochs = 100
-lr = 0.00000000001
+lr = 0.000001
 
 # Create the data loaders
 train_loader = DataLoader(SlamDataset("data/slam_data.h5", "rgbd_dataset_freiburg1_xyz", False),
@@ -77,7 +77,6 @@ def train(epoch):
         
         # Calculate and print loss
         loss = criterion(dec, target)
-        loss /= h*w*c
         
         # Backprop and update
         optimizer.zero_grad()
@@ -107,14 +106,13 @@ def test(epoch):
         dec = model(data)
 
         # Write results to file
-        if args.write_results:
+        if args.write_results:            
             print("Result writing not supported")
             exit(1)
             out.write("")
-                
+        
         # Calculate and print loss
         loss = criterion(dec, target).data[0]
-        loss /= h*w*c
         avg_loss += loss
     
     avg_loss /= len(test_loader)
