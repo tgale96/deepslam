@@ -3,3 +3,4 @@
 data/*
 *.pt
 eval*
+*.h5

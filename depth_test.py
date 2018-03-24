@@ -1,6 +1,8 @@
 from __future__ import print_function
 
 import argparse
+import cv2
+import numpy as np
 import torch
 from torch.autograd import Variable
 from torch import nn
@@ -93,9 +95,6 @@ def test(epoch):
     model.eval()
     avg_loss = 0
 
-    if args.write_results:
-        out = open("eval_{}.txt".format(epoch), 'w')
-        
     for batch_idx, batch in enumerate(test_loader):
         # Get the data for this iter
         data = Variable(batch['rgb'])
@@ -108,10 +107,9 @@ def test(epoch):
         dec = model(data)
 
         # Write results to file
-        if args.write_results:            
-            print("Result writing not supported")
-            exit(1)
-            out.write("")
+        if args.write_results:
+            depth_map = np.reshape(dec.cpu().data.numpy(), (h, w))
+            cv2.imwrite("e{}_{}.png".format(epoch, batch_idx), depth_map)
         
         # Calculate and print loss
         loss = criterion(dec, target).data[0]
