@@ -46,7 +46,9 @@ class DepthNet(nn.Module):
 h, w, c = 480, 640, 3
 batch_size = 32
 epochs = 100
-lr = 0.000001
+# lr = 0.001 # .481875 after 16 epochs
+# lr = 0.01 # .414730 after 12 epochs
+lr = 0.1 # .289239 after 58 epochs
 
 # Create the data loaders
 train_loader = DataLoader(SlamDataset("data/slam_data.h5", "rgbd_dataset_freiburg1_xyz", False),
