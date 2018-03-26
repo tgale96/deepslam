@@ -66,6 +66,11 @@ if args.cuda:
 criterion = nn.MSELoss(size_average=True)
 optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
+def img_stats(t):
+    t = np.array(t)
+    print("max, min, mean, std: {} / {} / {} / {}"
+          .format(t.max(), t.min(), np.mean(t), np.std(t)))
+    
 def train(epoch):
     model.train()
     for batch_idx, batch in enumerate(train_loader):
@@ -109,7 +114,8 @@ def test(epoch):
         # Write results to file
         if args.write_results:
             depth_map = np.reshape(dec.cpu().data.numpy(), (h, w)) * 5000.
-            cv2.imwrite("e{}_{}.png".format(epoch, batch_idx), depth_map)
+            cv2.imwrite("e{}_{}.png".format(epoch, batch_idx),
+                        depth_map.astype(np.uint16))
         
         # Calculate and print loss
         loss = criterion(dec, target).data[0]
