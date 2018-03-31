@@ -1,0 +1,87 @@
+from __future__ import print_function
+
+import argparse
+import cv2
+import numpy as np
+import torch
+from torch.autograd import Variable
+from torch import nn
+from torch.utils.data import DataLoader
+from slam_data import SlamDataset
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--weights")
+parser.add_argument("--cuda", action="store_true")
+args = parser.parse_args()
+
+class DepthNet(nn.Module):
+    def __init__(self):
+        super(DepthNet, self).__init__()
+
+        self.encoder = nn.Sequential(
+            nn.Conv2d(3, 128, 4, 2), # b, 128, 239, 319
+            nn.ReLU(True),
+            nn.MaxPool2d(3, 2), # b, 16, 119, 159
+            nn.Conv2d(128, 64, 3, 2), # b, 64, 59, 79
+            nn.ReLU(True),
+            nn.MaxPool2d(3, 2) # 64, 8, 29, 39
+        )
+
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(64, 64, 3, 2), # b, 64, 59, 79
+            nn.ReLU(True),
+            nn.ConvTranspose2d(64, 128, 3, 2), # b, 128, 119, 159
+            nn.ReLU(True),
+            nn.ConvTranspose2d(128, 128, 3, 2), # b, 128, 239, 319
+            nn.ReLU(True),
+            nn.ConvTranspose2d(128, 1, 4, 2) # b, 1, 480, 640
+        )
+        
+    def forward(self, x):
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
+
+# Output dims
+h, w, c = 480, 640, 3
+
+# Create the data loaders
+test_loader = DataLoader(SlamDataset("data/slam_data.h5", "rgbd_dataset_freiburg1_xyz", False),
+                         batch_size = 1, shuffle = False, num_workers = 0)
+
+# Create the model and load the weights
+model = DepthNet()
+model.load_state_dict(torch.load(args.weights))
+if args.cuda:
+    model = model.cuda()
+    
+criterion = nn.MSELoss(size_average=True)
+
+def test():
+    model.eval()
+    avg_loss = 0
+
+    for batch_idx, batch in enumerate(test_loader):
+        # Get the data for this iter
+        data = Variable(batch['rgb'])
+        target = Variable(batch['depth'])
+        if args.cuda:
+            data = data.cuda()
+            target = target.cuda()
+            
+        # Run the forward pass
+        dec = model(data)
+
+        depth_map = np.reshape(dec.cpu().data.numpy(), (h, w)) * 5000.
+        cv2.imwrite("{}.png".format(batch_idx),
+                    depth_map.astype(np.uint16))
+        
+        # Calculate and print loss
+        loss = criterion(dec, target).data[0]
+        avg_loss += loss
+    
+    avg_loss /= len(test_loader)
+    print("Test Set:\tAvg. Loss : {:.6f}".format(avg_loss))
+
+test()
