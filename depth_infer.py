@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import argparse
 import cv2
+from depth_models import DepthNet
 import numpy as np
 import torch
 from torch.autograd import Variable
@@ -13,35 +14,8 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--weights")
 parser.add_argument("--cuda", action="store_true")
+parser.add_argument("--model", default="DepthNet")
 args = parser.parse_args()
-
-class DepthNet(nn.Module):
-    def __init__(self):
-        super(DepthNet, self).__init__()
-
-        self.encoder = nn.Sequential(
-            nn.Conv2d(3, 128, 4, 2), # b, 128, 239, 319
-            nn.ReLU(True),
-            nn.MaxPool2d(3, 2), # b, 16, 119, 159
-            nn.Conv2d(128, 64, 3, 2), # b, 64, 59, 79
-            nn.ReLU(True),
-            nn.MaxPool2d(3, 2) # 64, 8, 29, 39
-        )
-
-        self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(64, 64, 3, 2), # b, 64, 59, 79
-            nn.ReLU(True),
-            nn.ConvTranspose2d(64, 128, 3, 2), # b, 128, 119, 159
-            nn.ReLU(True),
-            nn.ConvTranspose2d(128, 128, 3, 2), # b, 128, 239, 319
-            nn.ReLU(True),
-            nn.ConvTranspose2d(128, 1, 4, 2) # b, 1, 480, 640
-        )
-        
-    def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
 
 # Output dims
 h, w, c = 480, 640, 3
@@ -51,7 +25,12 @@ test_loader = DataLoader(SlamDataset("data/slam_data.h5", "rgbd_dataset_freiburg
                          batch_size = 1, shuffle = False, num_workers = 0)
 
 # Create the model and load the weights
-model = DepthNet()
+if args.model == "DepthNet":
+    model = DepthNet()
+else:
+    print("Unknown model argument.")
+    exit(1)
+
 model.load_state_dict(torch.load(args.weights))
 if args.cuda:
     model = model.cuda()

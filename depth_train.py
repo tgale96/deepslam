@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import argparse
 import cv2
+from depth_models import DepthNet
 import numpy as np
 import torch
 from torch.autograd import Variable
@@ -13,36 +14,12 @@ parser = argparse.ArgumentParser(
     description="script to train a small pose predictor")
 
 parser.add_argument("--write_results", action="store_true")
+parser.add_argument("--model", default="DepthNet")
 parser.add_argument("--cuda", action="store_true")
+parser.add_argument("--tune", action="store_true")
+parser.add_argument("--weights")
+parser.add_argument("--lr", type=float, default=0.1)
 args = parser.parse_args()
-    
-class DepthNet(nn.Module):
-    def __init__(self):
-        super(DepthNet, self).__init__()
-
-        self.encoder = nn.Sequential(
-            nn.Conv2d(3, 128, 4, 2), # b, 128, 239, 319
-            nn.ReLU(True),
-            nn.MaxPool2d(3, 2), # b, 16, 119, 159
-            nn.Conv2d(128, 64, 3, 2), # b, 64, 59, 79
-            nn.ReLU(True),
-            nn.MaxPool2d(3, 2) # 64, 8, 29, 39
-        )
-
-        self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(64, 64, 3, 2), # b, 64, 59, 79
-            nn.ReLU(True),
-            nn.ConvTranspose2d(64, 128, 3, 2), # b, 128, 119, 159
-            nn.ReLU(True),
-            nn.ConvTranspose2d(128, 128, 3, 2), # b, 128, 239, 319
-            nn.ReLU(True),
-            nn.ConvTranspose2d(128, 1, 4, 2) # b, 1, 480, 640
-        )
-        
-    def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
 
 # Output dims
 h, w, c = 480, 640, 3
@@ -50,7 +27,8 @@ batch_size = 32
 epochs = 100
 # lr = 0.001 # .481875 after 16 epochs
 # lr = 0.01 # .414730 after 12 epochs
-lr = 0.1 # .289239 after 58 epochs
+# lr = 0.1 # .289239 after 58 epochs
+lr = args.lr
 
 # Create the data loaders
 train_loader = DataLoader(SlamDataset("data/slam_data.h5", "rgbd_dataset_freiburg1_xyz", False),
@@ -59,7 +37,14 @@ test_loader = DataLoader(SlamDataset("data/slam_data.h5", "rgbd_dataset_freiburg
                          batch_size = 1, shuffle = False, num_workers = 0)
 
 # Create the model
-model = DepthNet()
+if args.model == "DepthNet":
+    model = DepthNet()
+else:
+    print("Unknown model argument")
+    exit(1)
+    
+if args.tune:
+    model.load_state_dict(torch.load(args.weights))
 if args.cuda:
     model = model.cuda()
     
