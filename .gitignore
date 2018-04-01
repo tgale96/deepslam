@@ -4,3 +4,4 @@ data/*
 *.pt
 eval*
 *.h5
+.DS_Store
