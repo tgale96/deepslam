@@ -53,6 +53,10 @@ def test():
         dec = model(data)
 
         depth_map = np.reshape(dec.cpu().data.numpy(), (h, w)) * 5000.
+
+        # Clamp negative predictions to 0
+        depth_map[depth_map < 0.0] = 0.0
+        
         cv2.imwrite("{}.png".format(batch_idx),
                     depth_map.astype(np.uint16))
         
