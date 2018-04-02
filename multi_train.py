@@ -19,6 +19,7 @@ parser.add_argument("--weights")
 parser.add_argument("--lr", type=float, default=0.1)
 parser.add_argument("--alpha", type=float, default=10000000)
 parser.add_argument("--beta", type=float, default=500)
+parser.add_argument("--dir", default="")
 args = parser.parse_args()
 
 batch_size = 32
@@ -131,8 +132,8 @@ def test(epoch):
           .format(avg_loss_depth, avg_loss_xyz, avg_loss_wpqr))
 
     # Save the model state
-    torch.save(model.state_dict(), "depth{}_xyz{}_wpqr{}_epoch_{}_lr{}_b{}.pt"
-               .format(avg_loss_depth, avg_loss_xyz, avg_loss_wpqr, epoch, lr, batch_size))
+    torch.save(model.state_dict(), args.dir + "depth{}_xyz{}_wpqr{}_epoch_{}_lr{}_alpha{}_b{}.pt"
+               .format(avg_loss_depth, avg_loss_xyz, avg_loss_wpqr, epoch, lr, alpha, batch_size))
     
 for epoch in range(1, epochs+1):
     train(epoch)
