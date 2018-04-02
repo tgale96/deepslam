@@ -17,10 +17,13 @@ parser.add_argument("--cuda", action="store_true")
 parser.add_argument("--tune", action="store_true")
 parser.add_argument("--weights")
 parser.add_argument("--lr", type=float, default=0.1)
+parser.add_argument("--alpha", type=float, default=10000000)
+parser.add_argument("--beta", type=float, default=500)
 args = parser.parse_args()
 
 batch_size = 32
-beta = 500
+alpha = args.alpha
+beta = args.beta
 epochs = 100
 lr = args.lr
 
@@ -73,12 +76,14 @@ def train(epoch):
         # Calculate pose loss
         loss_xyz = criterion_xyz(xyz, target_xyz)
         loss_wpqr = beta * criterion_wpqr(wpqr, target_wpqr)
-        loss_pose = sum([loss_xyz, loss_wpqr])
+        loss_pose = loss_xyz + loss_wpqr
+
+        # sum the loss
+        loss_total = loss_pose + alpha * loss_depth
         
         # Backprop and update
         optimizer.zero_grad()
-        loss_pose.backward()
-        loss_depth.backward()
+        loss_total.backward()
         optimizer.step()
 
         print("Train Epoch: {} [{}/{} ({:.0f}%)]\tDepth Loss: {:.6f}\tPose Loss: {:.6f}".format(
