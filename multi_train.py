@@ -132,8 +132,11 @@ def test(epoch):
           .format(avg_loss_depth, avg_loss_xyz, avg_loss_wpqr))
 
     # Save the model state
-    torch.save(model.state_dict(), args.dir + "depth{}_xyz{}_wpqr{}_epoch_{}_lr{}_alpha{}_b{}.pt"
-               .format(avg_loss_depth, avg_loss_xyz, avg_loss_wpqr, epoch, lr, alpha, batch_size))
+    model_str = "depth{}_xyz{}_wpqr{}_epoch_{}_lr{}_alpha{}_beta{}_b{}.pt"
+    torch.save(model.state_dict(), args.dir + model_str
+               .format(avg_loss_depth, avg_loss_xyz,
+                       avg_loss_wpqr, epoch, lr,
+                       alpha, beta, batch_size))
     
 for epoch in range(1, epochs+1):
     train(epoch)
