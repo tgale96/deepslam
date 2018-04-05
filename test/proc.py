@@ -10,12 +10,13 @@ dname = argv[2]
 depth = cv2.imread(dname, -1)
 
 # kernel and threshold parameters 
-k = 5
+edge_k = 5
+mean_k = 45
 t = 50
 
 def edge_det(img, t):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(img, (k, k), 0)
+    blur = cv2.GaussianBlur(img, (edge_k, edge_k), 0)
 
     # Don't threshold
     # (t, binary) = cv2.threshold(blur, t, 255, cv2.THRESH_BINARY_INV)
@@ -84,13 +85,20 @@ for mask in masks:
     used = cv2.bitwise_or(used, mask)
 
     # DEBUG: set region to mean
-    mean = masked[masked != 0.0].mean() 
-    masked[masked != 0.0] = mean
-    filtered = masked.copy()
-
+    # mean = masked[masked != 0.0].mean() 
+    # masked[masked != 0.0] = mean
+    # filtered = masked.copy()
+    
+    # set background of the image to the mean of the region
+    mean = masked[masked != 0.0].mean()
+    masked[masked == 0.0] = mean
+    
     # filter the selected region and add back
-    # kernel = np.ones((k, k), np.float32) / (k*k)
-    # filtered = cv2.filter2D(masked, -1, kernel)
+    kernel = np.ones((mean_k, mean_k), np.float32) / (mean_k**2)
+    filtered = cv2.filter2D(masked, -1, kernel)
+    
+    # mask out the background again
+    filtered = np.multiply(mask, filtered)
 
     # show_bin("mask", mask)
     # show_bin("inv_mask", inv_mask)
@@ -104,6 +112,7 @@ for mask in masks:
 # DEBUG: mask out parts of image not filtered
 dbg = np.multiply(whole_mask, depth)
 
+show_bin("whole_mask", whole_mask)
 cv2.imshow("debug", dbg)
 cv2.imshow("new_depth", depth)
 cv2.waitKey()
