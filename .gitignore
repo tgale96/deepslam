@@ -5,4 +5,3 @@ data/*
 eval*
 *.h5
 .DS_Store
-test*

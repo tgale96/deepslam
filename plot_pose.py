@@ -1,5 +1,5 @@
 import matplotlib as mpl
-mpl.use('Agg')
+# mpl.use('Agg')
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -23,10 +23,11 @@ with open(fname, 'r') as file:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.scatter(xs, ys, zs)
-        ax.set_xlim(0, 2)
-        ax.set_ylim(0, 2)
-        ax.set_zlim(0, 2)
-        fig.savefig("{}.png".format(idx))
+        ax.set_xlim(-0.5, 0.5)
+        ax.set_ylim(-0.5, 0.5)
+        ax.set_zlim(-0.5, 0.5)
+        # fig.savefig("{}.png".format(idx))
+        plt.show()
         plt.close(fig)
         idx += 1
 
