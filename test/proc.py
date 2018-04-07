@@ -61,18 +61,23 @@ def get_masks(img):
     # show_bin("whole_mask", whole_mask)
     return masks, whole_mask
 
-# cv2.imshow("depth", depth)
-
 # mask out anything lower than mean - std
 depth = np.array(depth)
 test = depth[(depth < (depth.mean() - depth.std()))]
 print("thresholding {} points out of {}".format(test.size, depth.size))
 depth[depth < (depth.mean() - depth.std())] = 0.0
-# cv2.imshow("thresh", depth)
 
+# Get the segmentation masks
 masks, whole_mask = get_masks(img)
-used = np.zeros(depth.shape, dtype=np.uint8)
+(_, inv_whole_mask) = cv2.threshold(whole_mask, 0, 1, 
+                                    cv2.THRESH_BINARY_INV)
+masks.append(inv_whole_mask)
+
+# Sort the masks from smallest to largest
 masks.sort(key = lambda x: x[x==1].size)
+
+# Mask for keeping track of filtered regions
+used = np.zeros(depth.shape, dtype=np.uint8)
 for mask in masks:
     # subtract the used mask 
     mask = cv2.bitwise_and(mask, cv2.bitwise_not(used))
@@ -97,6 +102,9 @@ for mask in masks:
     kernel = np.ones((mean_k, mean_k), np.float32) / (mean_k**2)
     filtered = cv2.filter2D(masked, -1, kernel)
     
+    # DEBUG: try median filtering for lower variance
+    filtered = cv2.medianBlur(filtered, 5)
+
     # mask out the background again
     filtered = np.multiply(mask, filtered)
 
@@ -118,5 +126,5 @@ cv2.imshow("new_depth", depth)
 cv2.waitKey()
 
 # DEBUG
-# cv2.imwrite("new_depth.png", depth)
-cv2.imwrite("new_depth.png", dbg)
+cv2.imwrite("new_depth.png", depth)
+# cv2.imwrite("new_depth.png", dbg)
